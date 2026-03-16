@@ -15,7 +15,7 @@ To position the system within the current landscape of video search and surveill
         Briefcam & Closed & Object-level & Yes \\
         Avigilon (Motorola) & Closed & Object-level & Yes \\
         Google Cloud Video AI & Closed & Frame-level & No \\
-        Twelve Labs & Open & Frame-level & No \\
+        Twelve Labs & Open & Segment-level & No \\
         Ours & Open & Region-level & Yes \\
         \hline
     \end{tabular}
@@ -29,9 +29,9 @@ To position the system within the current landscape of video search and surveill
 
 \textbf{Google Cloud Video Intelligence API} provides label detection, shot change detection, and object tracking as cloud-based services. It supports a broader set of labels than traditional surveillance tools but still relies on a closed vocabulary defined by its training data. It does not support natural language search or face recognition out of the box.
 
-\textbf{Twelve Labs} is a video understanding platform that uses multimodal AI to enable natural language search over video content. It supports open-vocabulary queries at the frame level, making it one of the closer competitors to our approach. However, because it encodes entire frames rather than individual regions, its retrieval accuracy can degrade when the target object occupies a small portion of the frame.
+\textbf{Twelve Labs} is a video understanding platform that uses proprietary multimodal models to enable natural language search over video content. It supports open-vocabulary queries at the video segment level, making it one of the closer competitors to our approach. However, because it processes video segments as a whole rather than isolating individual objects, it lacks the fine-grained, per-object precision that explicit segmentation provides. Our system uses SAM to produce exact region masks for each object before encoding, ensuring that small or occluded items are not lost within a larger segment embedding.
 
-the system differentiates itself by combining open-vocabulary search with region-level granularity. By segmenting objects before encoding, the system preserves the visual signal of individual items regardless of their size or position within the frame. Additionally, the integration of face recognition provides identity-based search that most open-vocabulary competitors lack.
+Our system differentiates itself by combining open-vocabulary search with region-level granularity. By segmenting objects before encoding, the system preserves the visual signal of individual items regardless of their size or position within the frame. Additionally, the integration of face recognition provides identity-based search that most open-vocabulary competitors lack.
 
 \section{Literature Review}
 \label{section:literature-review}

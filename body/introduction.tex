@@ -30,7 +30,8 @@ This project proposes an open-vocabulary video search system that allows users t
 The system works in four stages:
 
 \begin{enumerate}
-    \item \textbf{Segment.} SAM processes each video frame to detect and isolate every distinct object or region.
+    \item \textbf{Extract.} Keyframes are extracted from the video at 1 frame per second (1 FPS).
+    \item \textbf{Segment.} SAM processes each extracted frame to detect and isolate every distinct object or region.
     \item \textbf{Encode.} CLIP encodes each segmented region into a vector embedding that exists in the same semantic space as text.
     \item \textbf{Store.} All region embeddings are stored alongside their frame timestamps in a vector database optimized for similarity search.
     \item \textbf{Search.} When a user submits a text or image query, the system encodes the query and retrieves the most similar region embeddings using cosine similarity, returning results ranked by relevance with direct links to the corresponding timestamps.

@@ -107,7 +107,6 @@ The following stakeholders have been identified for the system:
     \end{enumerate} \\ \hline
 \textbf{Alternative Flows} &
     \begin{itemize}[nosep, leftmargin=*]
-        \item \textit{Incorrect clustering:} The system has grouped two different people into one cluster. The user manually splits the cluster into separate identities.
         \item \textit{No faces detected:} The footage contains no detectable faces (e.g., low resolution, no people present). The face gallery is empty.
     \end{itemize} \\ \hline
 \end{tabular}
@@ -128,7 +127,8 @@ The following stakeholders have been identified for the system:
         \item The user navigates to the upload page.
         \item The user selects one or more video files to upload.
         \item The system validates the file format and begins uploading.
-        \item The system starts the processing pipeline: frame extraction, SAM segmentation, CLIP encoding, and InsightFace face detection.
+        \item Once the upload completes, the system queues an asynchronous background job for processing. The user is free to navigate away or continue using the application.
+        \item The background job extracts keyframes at 1 FPS, runs SAM segmentation, CLIP encoding, and InsightFace face detection on each frame.
         \item The system displays a progress indicator showing the current stage and percentage complete.
         \item Once processing finishes, the system marks the video as searchable and notifies the user.
     \end{enumerate} \\ \hline
