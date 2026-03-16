@@ -4,7 +4,7 @@
 \section{Competitor Analysis}
 \label{section:competitor-analysis}
 
-To position the system within the current landscape of video search and surveillance analytics tools, we evaluated several existing solutions across two dimensions: vocabulary flexibility (whether the system supports open-ended queries or only predefined categories) and search granularity (whether retrieval operates at the frame level or the object/region level). Table~\ref{tab:competitive-landscape} summarizes this positioning.
+We evaluated existing video search solutions across vocabulary flexibility and search granularity. Table~\ref{tab:competitive-landscape} summarizes the comparison.
 
 \begin{table}[h]
     \centering
@@ -16,22 +16,20 @@ To position the system within the current landscape of video search and surveill
         Avigilon (Motorola) & Closed & Object-level & Yes \\
         Google Cloud Video AI & Closed & Frame-level & No \\
         Twelve Labs & Open & Segment-level & No \\
-        Ours & Open & Region-level & Yes \\
+        \textbf{Ours} & Open & Region-level & Yes \\
         \hline
     \end{tabular}
     \caption{Comparison of video search tools by vocabulary type, search granularity, and face search capability.}
     \label{tab:competitive-landscape}
 \end{table}
 
-\textbf{Briefcam} is a commercial video analytics platform widely used in law enforcement and urban surveillance. It provides object detection, classification, and tracking with support for face recognition. However, its search capabilities are limited to predefined categories such as people, vehicles, and specific object types. Users cannot issue free-form natural language queries.
+\textbf{Briefcam} and \textbf{Avigilon} are commercial surveillance platforms that provide object detection and face recognition, but are limited to predefined categories. Users cannot issue free-form natural language queries.
 
-\textbf{Avigilon} (now part of Motorola Solutions) offers an Appearance Search feature that allows users to search for people or vehicles based on visual attributes like clothing color or vehicle type. While this is more flexible than basic category filters, it is still constrained to a fixed set of attributes rather than truly open-ended queries.
+\textbf{Google Cloud Video Intelligence API} offers label detection and object tracking with a broader label set, but still relies on a closed vocabulary and does not support natural language search.
 
-\textbf{Google Cloud Video Intelligence API} provides label detection, shot change detection, and object tracking as cloud-based services. It supports a broader set of labels than traditional surveillance tools but still relies on a closed vocabulary defined by its training data. It does not support natural language search or face recognition out of the box.
+\textbf{Twelve Labs} uses proprietary multimodal models to enable open-vocabulary search at the video segment level. However, it processes video segments as a whole rather than isolating individual objects, lacking the per-object precision that explicit segmentation provides.
 
-\textbf{Twelve Labs} is a video understanding platform that uses proprietary multimodal models to enable natural language search over video content. It supports open-vocabulary queries at the video segment level, making it one of the closer competitors to our approach. However, because it processes video segments as a whole rather than isolating individual objects, it lacks the fine-grained, per-object precision that explicit segmentation provides. Our system uses SAM to produce exact region masks for each object before encoding, ensuring that small or occluded items are not lost within a larger segment embedding.
-
-Our system differentiates itself by combining open-vocabulary search with region-level granularity. By segmenting objects before encoding, the system preserves the visual signal of individual items regardless of their size or position within the frame. Additionally, the integration of face recognition provides identity-based search that most open-vocabulary competitors lack.
+Our system differentiates itself by combining open-vocabulary search with region-level granularity and face recognition. By segmenting objects with SAM before encoding with CLIP, the system preserves the visual signal of individual items regardless of their size or position within the frame.
 
 \section{Literature Review}
 \label{section:literature-review}
@@ -40,34 +38,20 @@ This section reviews the key research that informs the design and technical appr
 
 \subsection{CLIP: Contrastive Language-Image Pretraining}
 
-Radford et al. \cite{radford2021learning} introduced CLIP, a model trained on 400 million image-text pairs collected from the internet. CLIP learns to map images and text into a shared embedding space using a contrastive learning objective, where matching image-text pairs are pulled together and non-matching pairs are pushed apart. The resulting model can perform zero-shot image classification and retrieval by comparing the cosine similarity between image and text embeddings.
-
-CLIP's strength lies in its open-vocabulary capability. Unlike traditional classifiers that require retraining for new categories, CLIP can match images to arbitrary text descriptions. This makes it well suited for search applications where the set of possible queries is not known in advance.
-
-In the system, CLIP serves as the backbone for encoding both segmented image regions and user queries (text or image) into the same vector space, enabling similarity-based retrieval.
+Radford et al. \cite{radford2021learning} introduced CLIP, trained on 400 million image-text pairs using a contrastive learning objective. CLIP maps images and text into a shared embedding space, enabling zero-shot retrieval by comparing cosine similarity between embeddings. Unlike traditional classifiers, CLIP can match images to arbitrary text descriptions without retraining, making it well suited for open-vocabulary search. In our system, CLIP encodes both segmented image regions and user queries into the same vector space.
 
 \subsection{SAM: Segment Anything Model}
 
-Kirillov et al. \cite{kirillov2023segment} developed SAM, a foundation model for image segmentation trained on over 1 billion masks across 11 million images. SAM is designed to be promptable, meaning it can generate segmentation masks in response to various input prompts such as points, bounding boxes, or text. Critically, SAM can segment objects it has never seen during training, making it category-agnostic.
-
-The relevance of SAM to this project is straightforward. By applying SAM to each video frame, the system can isolate every distinct object or region without needing to know what those objects are. This segmentation step is what enables the system's region-level encoding approach, ensuring that each object receives its own dedicated embedding rather than being diluted within a full-frame representation.
+Kirillov et al. \cite{kirillov2023segment} developed SAM, a foundation model trained on over 1 billion masks across 11 million images. SAM can segment any object in an image without category-specific training, making it category-agnostic. By applying SAM to each video frame, our system isolates every distinct object or region, ensuring each receives its own dedicated embedding rather than being diluted within a full-frame representation.
 
 \subsection{SAM-CLIP Search}
 
-Mulani et al. \cite{mulani2025samclip} proposed SAM-CLIP Search, a method that combines SAM's segmentation with CLIP's embedding for region-based image retrieval. Their approach first segments images using SAM, then encodes each segment with CLIP, and finally performs similarity search against a query.
-
-Their evaluation on standard benchmarks (COCO, Flickr30K, and Fashion200K) demonstrated that region-level retrieval consistently outperforms frame-level CLIP retrieval. Specifically, SAM-CLIP Search achieved 92\% retrieval accuracy and 89.3\% Recall@5, compared to CLIP-only retrieval at approximately 85\% accuracy. These results validate the core hypothesis behind our design: that segmenting before encoding produces more accurate retrieval.
-
-Our system adopts this same segmentation-then-encoding pipeline and extends it to video by adding temporal indexing, face recognition, and a user-facing search interface.
+Mulani et al. \cite{mulani2025samclip} combined SAM segmentation with CLIP encoding for region-based image retrieval. On standard benchmarks (COCO, Flickr30K, Fashion200K), their approach achieved 92\% retrieval accuracy and 89.3\% Recall@5, compared to 85\% accuracy with CLIP-only retrieval. These results validate our core design hypothesis. Our system adopts this pipeline and extends it to video with temporal indexing, face recognition, and an interactive search interface.
 
 \subsection{ArcFace and InsightFace}
 
-Deng et al. \cite{deng2019arcface} introduced ArcFace, an additive angular margin loss function for training face recognition models. ArcFace improves discriminative power by enforcing a geodesic distance margin between face embeddings on a hypersphere, resulting in tighter intra-class clustering and clearer inter-class separation. It achieved state-of-the-art results on several face recognition benchmarks including LFW, CFP-FP, and AgeDB-30.
-
-InsightFace is the open-source toolkit that implements ArcFace along with a suite of face detection and alignment models. In the system, InsightFace handles the face-specific pipeline: detecting faces in video frames, generating identity embeddings, and clustering faces by identity. This allows users to select a face and retrieve all frames containing that individual, complementing the general-purpose object search provided by SAM and CLIP.
+Deng et al. \cite{deng2019arcface} introduced ArcFace, an angular margin loss for face recognition that produces highly discriminative embeddings. InsightFace is the open-source toolkit implementing ArcFace along with face detection and alignment. In our system, InsightFace handles face detection, identity embedding, and clustering, allowing users to select a face and retrieve all frames containing that individual.
 
 \subsection{The Value of CCTV in Investigations}
 
-Ashby \cite{ashby2017value} conducted an empirical study analyzing the role of CCTV footage in criminal investigations in London. The study found that while CCTV footage was available in a substantial proportion of cases, it contributed useful evidence in only 29\% of them. The primary barriers were not the absence of cameras but the difficulty of locating relevant footage within large archives and the time required for manual review.
-
-This finding directly motivates the need for automated, intelligent video search tools. This system addresses exactly the bottleneck that Ashby identified: the gap between having footage and being able to extract actionable information from it. By enabling fast, flexible search over video archives, the project aims to increase the proportion of cases where available footage translates into useful evidence.
+Ashby \cite{ashby2017value} found that CCTV footage contributed useful evidence in only 29\% of criminal cases studied in London. The barrier was not camera availability but the difficulty of locating relevant footage within large archives. This finding directly motivates our system, which addresses the gap between having footage and being able to extract actionable information from it.

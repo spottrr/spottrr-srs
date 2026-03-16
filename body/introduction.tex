@@ -4,78 +4,65 @@
 \section{Background}
 \label{section:background}
 
-Video surveillance has become a fundamental part of modern security infrastructure. Businesses, governments, and public institutions rely on closed-circuit television (CCTV) systems to monitor spaces, deter crime, and support investigations. A single retail store equipped with 16 cameras generates roughly 384 hours of footage every day. Across an entire city or enterprise, the volume of recorded video quickly reaches a scale that no human team can feasibly review in full.
+Video surveillance is widely deployed across businesses, governments, and public institutions. Even a small establishment with a handful of cameras can generate hundreds of hours of footage per day, and across an entire city or enterprise the volume quickly reaches a scale that no human team can feasibly review. Despite this, only 29\% of criminal cases involving CCTV produced useful evidence for investigators \cite{ashby2017value}. The problem is not a lack of recordings but the absence of efficient tools for searching through them.
 
-Despite the sheer amount of footage being captured, the ability to retrieve useful information from it remains limited. According to Ashby \cite{ashby2017value}, only 29\% of criminal cases that involved CCTV footage actually produced useful evidence for investigators. The problem is not a lack of recordings but rather the absence of efficient tools for searching through them.
+Conventional video analytics rely on predefined categories such as ``person'' or ``car.'' These closed-vocabulary systems cannot process open-ended queries like ``man in a red shirt carrying a box.'' This gap between what users want to search for and what existing systems can understand represents a significant bottleneck in video surveillance workflows.
 
-Conventional video analytics systems rely on predefined object categories such as ``person,'' ``car,'' or ``bag.'' These closed-vocabulary systems can only detect what they were explicitly trained to recognize. If an investigator needs to find a ``man in a red shirt carrying a box,'' the system has no way to process that query. This gap between what users want to search for and what existing systems can understand represents a significant bottleneck in video surveillance workflows.
-
-Recent advances in computer vision have introduced models capable of understanding open-ended, natural language descriptions of visual content. CLIP (Contrastive Language-Image Pretraining), developed by Radford et al. \cite{radford2021learning}, maps both images and text into a shared embedding space, enabling similarity-based retrieval without the need for predefined labels. Meanwhile, SAM (Segment Anything Model) by Kirillov et al. \cite{kirillov2023segment} can segment any object in an image without prior training on specific categories. Together, these models open the door to a new kind of video search that is flexible, open-vocabulary, and capable of handling the diverse queries that real users have.
+Recent advances in computer vision have introduced models that address these limitations. CLIP \cite{radford2021learning} maps both images and text into a shared embedding space, enabling similarity-based retrieval without predefined labels. SAM \cite{kirillov2023segment} can segment any object in an image without prior training on specific categories. Together, these models open the door to a new kind of video search that is flexible, open-vocabulary, and capable of handling diverse queries.
 
 \section{Problem Statement}
 \label{section:problem-statement}
 
-Current approaches to searching video footage suffer from two core limitations.
-First, traditional video analytics tools operate on a closed vocabulary. They can detect and classify objects only within a fixed set of categories defined during training. This means that any query falling outside the predefined label set simply cannot be answered. For real-world use cases like security investigations, retail loss prevention, or traffic monitoring, the range of possible queries is far too broad to be captured by a static category list.
-
-Second, existing CLIP-based retrieval methods that do support open-vocabulary search typically encode entire frames as single vectors. While this approach works for simple queries, it struggles when the target object is small, partially occluded, or surrounded by visually dominant elements. The embedding of the full frame dilutes the signal of individual objects, leading to missed results or poor ranking.
-
-These limitations mean that users who need to find specific moments in large volumes of footage are left with manual review or unreliable automated tools. There is a clear need for a system that combines open-vocabulary understanding with fine-grained, object-level retrieval to make video search both flexible and accurate.
+Current video search approaches suffer from two limitations. First, traditional tools operate on a closed vocabulary and cannot answer queries outside their predefined label set. Second, existing CLIP-based methods that support open-vocabulary search encode entire frames as single vectors, diluting the signal of individual objects and leading to poor retrieval when targets are small or occluded.
 
 \section{Solution Overview}
 \label{section:solution-overview}
 
-This project proposes an open-vocabulary video search system that allows users to upload footage, describe what they are looking for using natural language or reference images, and retrieve the exact moments where matching content appears. Rather than encoding entire frames, the system uses a region-level approach that segments individual objects before encoding them, resulting in more precise and reliable retrieval.
-
-The system works in four stages:
+This project proposes an open-vocabulary video search system that allows users to upload footage, describe what they are looking for using natural language or reference images, and retrieve the exact matching moments. The system uses a region-level approach with five stages:
 
 \begin{enumerate}
-    \item \textbf{Extract.} Keyframes are extracted from the video at 1 frame per second (1 FPS).
-    \item \textbf{Segment.} SAM processes each extracted frame to detect and isolate every distinct object or region.
-    \item \textbf{Encode.} CLIP encodes each segmented region into a vector embedding that exists in the same semantic space as text.
-    \item \textbf{Store.} All region embeddings are stored alongside their frame timestamps in a vector database optimized for similarity search.
-    \item \textbf{Search.} When a user submits a text or image query, the system encodes the query and retrieves the most similar region embeddings using cosine similarity, returning results ranked by relevance with direct links to the corresponding timestamps.
+    \item \textbf{Extract.} Keyframes are extracted at 1 frame per second (1 FPS).
+    \item \textbf{Segment.} SAM processes each frame to isolate every distinct object or region.
+    \item \textbf{Encode.} CLIP encodes each segmented region into a vector embedding in the same semantic space as text.
+    \item \textbf{Store.} All embeddings are stored with timestamps in a vector database.
+    \item \textbf{Search.} User queries are encoded and matched against stored embeddings using cosine similarity, returning ranked results with timestamps.
 \end{enumerate}
 
-For face-specific search, the system integrates InsightFace \cite{deng2019arcface} for face detection and recognition. Detected faces are clustered by identity, allowing users to select a person and instantly see every frame in which that individual appears.
-
-This combination of segmentation-first encoding and open-vocabulary matching allows the system to handle queries that traditional surveillance tools cannot, from vague natural language descriptions to image-based lookups of specific objects or people.
+For face-specific search, the system integrates InsightFace \cite{deng2019arcface} to detect, recognize, and cluster faces by identity across footage.
 
 \subsection{Features}
 \label{subsection:features}
 
 \begin{enumerate}[leftmargin=80pt]
-    \item Open-Vocabulary Text Search: Search for any object, person, or scene using natural language queries without predefined categories.
-    \item Image-Based Query: Upload a reference photo and find every matching appearance in the footage.
-    \item Face Recognition and Tracking: Automatically detect, cluster, and track unique faces across all uploaded footage.
-    \item Timestamp Navigation: Click on any search result to jump directly to the exact moment in the video.
-    \item Multi-Camera Support: Upload and search across footage from multiple cameras in a single workspace.
+    \item Open-Vocabulary Text Search: Search using natural language without predefined categories.
+    \item Image-Based Query: Upload a reference photo to find matching appearances.
+    \item Face Recognition and Tracking: Detect, cluster, and track unique faces across footage.
+    \item Timestamp Navigation: Jump directly to the exact moment from any search result.
+    \item Multi-Camera Support: Search across footage from multiple cameras.
 \end{enumerate}
 
 \section{Target User}
 \label{section:target-user}
 
-This system is designed for users who need to locate specific events, objects, or people within large volumes of video footage. The primary target users include:
+This system is designed for users who need to locate specific events, objects, or people within large volumes of video footage:
 
 \begin{itemize}
-    \item \textbf{Security personnel and investigators} who review surveillance footage to find evidence or identify suspects. These users often work under time pressure and need to search through hours or days of recordings from multiple cameras.
-    \item \textbf{Retail loss prevention teams} who monitor store footage for theft, policy violations, or unusual behavior. They benefit from the ability to search for specific items or actions without manually scrubbing through recordings.
-    \item \textbf{Operations and facility managers} who use camera footage to monitor workflows, verify incidents, or review events. They need a tool that is straightforward to use without requiring technical expertise in computer vision or machine learning.
-    \item \textbf{Small business owners} such as shop, restaurant, or grocery store owners who have basic CCTV setups and occasionally need to look up specific moments, such as verifying a customer complaint or checking a delivery. They have no technical background and need a search experience as simple as typing a query.
+    \item \textbf{Security personnel and investigators} who search footage for evidence or suspects under time pressure.
+    \item \textbf{Retail loss prevention teams} who monitor footage for theft or policy violations across multiple cameras.
+    \item \textbf{Operations and facility managers} who review footage for incidents or workflow monitoring without technical expertise.
+    \item \textbf{Small business owners} who have basic CCTV setups and need to look up specific moments like verifying a complaint or checking a delivery.
 \end{itemize}
-
-These users share a common need: the ability to describe what they are looking for in plain language and get results quickly, without relying on rigid category-based filters or manual frame-by-frame review.
 
 \section{Terminology}
 \label{section:terminology}
 
 \begin{description}[style=nextline, leftmargin=2cm]
-    \item[CLIP] Contrastive Language-Image Pretraining. A model developed by OpenAI that learns visual concepts from natural language supervision, mapping both images and text into a shared vector space for similarity-based retrieval.
-    \item[SAM] Segment Anything Model. A promptable segmentation model developed by Meta AI that can identify and isolate any object in an image without category-specific training.
-    \item[InsightFace] An open-source face analysis toolkit that provides face detection, recognition, and alignment capabilities, used in this system for identity-based face search.
-    \item[Embedding] A numerical vector representation of data (such as an image region or a text query) in a high-dimensional space, where semantically similar items are positioned close together.
-    \item[Cosine Similarity] A metric that measures the similarity between two vectors by computing the cosine of the angle between them. Values range from -1 to 1, where 1 indicates identical direction.
-    \item[Vector Database] A database system optimized for storing and querying high-dimensional vector embeddings, enabling fast nearest-neighbor search over large collections.
-    \item[Open Vocabulary] A property of a system that allows it to recognize or search for concepts beyond a fixed, predefined set of categories, typically by leveraging language-vision models.
-    \item[Region-Level Search] A retrieval approach that segments an image into individual object regions and encodes each region separately, as opposed to encoding the entire image as a single unit.
+    \item[CLIP] Contrastive Language-Image Pretraining. Maps images and text into a shared vector space for similarity-based retrieval.
+    \item[SAM] Segment Anything Model. Segments any object in an image without category-specific training.
+    \item[InsightFace] Open-source face analysis toolkit for detection, recognition, and alignment.
+    \item[Embedding] A numerical vector representing data in a high-dimensional space where similar items are close together.
+    \item[Cosine Similarity] A metric measuring similarity between two vectors by the cosine of the angle between them.
+    \item[Vector Database] A database optimized for storing and querying high-dimensional embeddings via nearest-neighbor search.
+    \item[Open Vocabulary] The ability to search for concepts beyond a fixed set of predefined categories.
+    \item[Region-Level Search] Segmenting an image into individual regions and encoding each separately, rather than encoding the full frame.
 \end{description}
