@@ -8,28 +8,26 @@ We evaluated existing video search solutions across vocabulary flexibility and s
 
 \begin{table}[h]
     \centering
-    \begin{tabular}{|l|c|c|c|}
-        \hline
+    \begin{tabular}{lccc}
+        \toprule
         \textbf{Product} & \textbf{Vocabulary} & \textbf{Granularity} & \textbf{Face Search} \\
-        \hline
+        \midrule
         Briefcam & Closed & Object-level & Yes \\
         Avigilon (Motorola) & Closed & Object-level & Yes \\
-        Google Cloud Video AI & Closed & Frame-level & No \\
         Twelve Labs & Open & Segment-level & No \\
+        \midrule
         \textbf{Ours} & Open & Region-level & Yes \\
-        \hline
+        \bottomrule
     \end{tabular}
     \caption{Comparison of video search tools by vocabulary type, search granularity, and face search capability.}
     \label{tab:competitive-landscape}
 \end{table}
 
-\textbf{Briefcam} and \textbf{Avigilon} are commercial surveillance platforms that provide object detection and face recognition, but are limited to predefined categories. Users cannot issue free-form natural language queries.
-
-\textbf{Google Cloud Video Intelligence API} offers label detection and object tracking with a broader label set, but still relies on a closed vocabulary and does not support natural language search.
+\textbf{Briefcam} and \textbf{Avigilon} are commercial surveillance platforms that provide object detection and face recognition. Both rely on predefined attribute filters (e.g., gender, clothing color, vehicle type) rather than true open-vocabulary search. Briefcam has recently introduced limited natural language input, but it translates queries into its fixed set of structured filters rather than performing semantic matching.
 
 \textbf{Twelve Labs} uses proprietary multimodal models to enable open-vocabulary search at the video segment level. However, it processes video segments as a whole rather than isolating individual objects, lacking the per-object precision that explicit segmentation provides.
 
-Our system differentiates itself by combining open-vocabulary search with region-level granularity and face recognition. By segmenting objects with SAM before encoding with CLIP, the system preserves the visual signal of individual items regardless of their size or position within the frame.
+Our system differentiates itself by combining open-vocabulary search with region-level granularity and face recognition. By segmenting objects with SAM before encoding with a vision-language model, the system preserves the visual signal of individual items regardless of their size or position within the frame.
 
 \section{Literature Review}
 \label{section:literature-review}
@@ -38,15 +36,19 @@ This section reviews the key research that informs the design and technical appr
 
 \subsection{CLIP: Contrastive Language-Image Pretraining}
 
-Radford et al. \cite{radford2021learning} introduced CLIP, trained on 400 million image-text pairs using a contrastive learning objective. CLIP maps images and text into a shared embedding space, enabling zero-shot retrieval by comparing cosine similarity between embeddings. Unlike traditional classifiers, CLIP can match images to arbitrary text descriptions without retraining, making it well suited for open-vocabulary search. In our system, CLIP encodes both segmented image regions and user queries into the same vector space.
+Radford et al. \cite{radford2021learning} introduced CLIP, trained on 400 million image-text pairs using a contrastive learning objective. CLIP maps images and text into a shared embedding space, enabling zero-shot retrieval by comparing cosine similarity between embeddings. Unlike traditional classifiers, CLIP can match images to arbitrary text descriptions without retraining, making it well suited for open-vocabulary search. CLIP serves as a baseline in our benchmark evaluation.
+
+\subsection{SigLIP2: Multilingual Vision-Language Encoder}
+
+Zhai et al. \cite{zhai2025siglip2} developed SigLIP2, an improved vision-language model that uses a sigmoid loss instead of softmax contrastive loss, combined with self-distillation and masked prediction during training. On COCO text-to-image retrieval, SigLIP2 achieves 53.2\% Recall@1 compared to CLIP's 47.4\%. In our benchmark, SigLIP2 outperforms CLIP on all query categories. The architecture is encoder-agnostic; the system can use any vision-language encoder, and SigLIP2 is the current choice based on benchmark results.
 
 \subsection{SAM: Segment Anything Model}
 
-Kirillov et al. \cite{kirillov2023segment} developed SAM, a foundation model trained on over 1 billion masks across 11 million images. SAM can segment any object in an image without category-specific training, making it category-agnostic. By applying SAM to each video frame, our system isolates every distinct object or region, ensuring each receives its own dedicated embedding rather than being diluted within a full-frame representation.
+Kirillov et al. \cite{kirillov2023segment} developed SAM, a foundation model trained on over 1 billion masks across 11 million images. SAM can segment any object in an image without category-specific training, making it category-agnostic. By applying SAM to each video frame, our system isolates every distinct object or region, ensuring each receives its own dedicated embedding rather than being diluted within a full-frame representation. SAM segments class-agnostically at indexing time, meaning no text prompt is required and the system can handle arbitrary queries at search time without re-processing.
 
 \subsection{SAM-CLIP Search}
 
-Mulani et al. \cite{mulani2025samclip} combined SAM segmentation with CLIP encoding for region-based image retrieval. On standard benchmarks (COCO, Flickr30K, Fashion200K), their approach achieved 92\% retrieval accuracy and 89.3\% Recall@5, compared to 85\% accuracy with CLIP-only retrieval. These results validate our core design hypothesis. Our system adopts this pipeline and extends it to video with temporal indexing, face recognition, and an interactive search interface.
+Mulani et al. \cite{mulani2025samclip} combined SAM segmentation with CLIP encoding for region-based image retrieval. On standard benchmarks (COCO, Flickr30K, Fashion200K), their approach achieved 92\% retrieval accuracy and 89.3\% Recall@5, compared to 85\% accuracy with CLIP-only retrieval. Our system builds on this approach with three key improvements: (1) replacing CLIP with SigLIP2 for stronger encoding, (2) adding context padding to crops and including the whole image as a region, and (3) using hybrid max-scoring that fuses region-level and whole-image scores. Our benchmark on COCO val2017 shows SAM + SigLIP2 achieves 0.748 Recall@5 compared to 0.654 for SAM + CLIP.
 
 \subsection{ArcFace and InsightFace}
 
@@ -55,3 +57,4 @@ Deng et al. \cite{deng2019arcface} introduced ArcFace, an angular margin loss fo
 \subsection{The Value of CCTV in Investigations}
 
 Ashby \cite{ashby2017value} found that CCTV footage contributed useful evidence in only 29\% of criminal cases studied in London. The barrier was not camera availability but the difficulty of locating relevant footage within large archives. This finding directly motivates our system, which addresses the gap between having footage and being able to extract actionable information from it.
+

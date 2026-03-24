@@ -6,7 +6,8 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{mathptmx}  % Times New Roman font package
-\usepackage[hidelinks]{hyperref}  % Allows hyperlink text in built document
+\usepackage{xcolor}  % Color support
+\usepackage[colorlinks=true, citecolor=blue!70!black, linkcolor=black, urlcolor=blue!70!black]{hyperref}  % Colored citation links
 \usepackage{url}  % Allows url line breaks
 \usepackage{microtype}  % For hyphen-letterspacing configuration
 \usepackage{cleveref}  % Smarter referencing
@@ -15,6 +16,7 @@
 \usepackage{indentfirst}  % Indent first paragraph after headers
 \usepackage{enumitem}  % Better control of itemize, enumerate
 \usepackage{float}  % Provides [H] placement for tables and figures
+\usepackage{booktabs}  % Professional table styling
 
 \graphicspath{{./assets}}
 
@@ -24,7 +26,7 @@
 
 %% -----------------------------------
 % Edit the variables for the paper here!
-\def \srsTitle{Open-Vocabulary Video Search using Computer Vision}
+\def \srsTitle{Open-Vocabulary Video Search Using Computer Vision}
 \def \srsAuthorOne{Pattapon Gowanit}
 \def \srsAuthorTwo{Pannatat Nakornpuckdee}
 \def \srsAcademicYear{2025}

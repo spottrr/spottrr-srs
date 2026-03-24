@@ -8,25 +8,28 @@ Video surveillance is widely deployed across businesses, governments, and public
 
 Conventional video analytics rely on predefined categories such as ``person'' or ``car.'' These closed-vocabulary systems cannot process open-ended queries like ``man in a red shirt carrying a box.'' This gap between what users want to search for and what existing systems can understand represents a significant bottleneck in video surveillance workflows.
 
-Recent advances in computer vision have introduced models that address these limitations. CLIP \cite{radford2021learning} maps both images and text into a shared embedding space, enabling similarity-based retrieval without predefined labels. SAM \cite{kirillov2023segment} can segment any object in an image without prior training on specific categories. Together, these models open the door to a new kind of video search that is flexible, open-vocabulary, and capable of handling diverse queries.
+Recent advances in computer vision have introduced models that address these limitations. Vision-language models such as CLIP \cite{radford2021learning} and SigLIP2 \cite{zhai2025siglip2} map both images and text into a shared embedding space, enabling similarity-based retrieval without predefined labels. SAM \cite{kirillov2023segment} can segment any object in an image without prior training on specific categories. Together, these models open the door to a new kind of video search that is flexible, open-vocabulary, and capable of handling diverse queries.
 
 \section{Problem Statement}
 \label{section:problem-statement}
 
-Current video search approaches suffer from two limitations. First, traditional tools operate on a closed vocabulary and cannot answer queries outside their predefined label set. Second, existing CLIP-based methods that support open-vocabulary search encode entire frames as single vectors, diluting the signal of individual objects and leading to poor retrieval when targets are small or occluded.
+Current video search approaches suffer from two limitations. First, traditional tools operate on a closed vocabulary and cannot answer queries outside their predefined label set. Second, existing methods that support open-vocabulary search encode entire frames as single vectors, diluting the signal of individual objects and leading to poor retrieval when targets are small or occluded. Our benchmark confirms this: whole-image encoding achieves only 0.244 Recall@5 on small background objects, compared to 0.619 with our region-level approach.
 
 \section{Solution Overview}
 \label{section:solution-overview}
 
-This project proposes an open-vocabulary video search system that allows users to upload footage, describe what they are looking for using natural language or reference images, and retrieve the exact matching moments. The system uses a region-level approach with five stages:
+This project proposes an open-vocabulary video search system that allows users to upload footage, describe what they are looking for using natural language or reference images, and retrieve the exact matching moments. The system uses a region-level hybrid approach with five stages:
 
 \begin{enumerate}
-    \item \textbf{Extract.} Keyframes are extracted at 1 frame per second (1 FPS).
+    \item \textbf{Extract.} Keyframes are extracted at 1--5 frames per second.
     \item \textbf{Segment.} SAM processes each frame to isolate every distinct object or region.
-    \item \textbf{Encode.} CLIP encodes each segmented region into a vector embedding in the same semantic space as text.
-    \item \textbf{Store.} All embeddings are stored with timestamps in a vector database.
-    \item \textbf{Search.} User queries are encoded and matched against stored embeddings using cosine similarity, returning ranked results with timestamps.
+    \item \textbf{Encode.} A vision-language encoder encodes each segmented region (with context padding) and the whole frame into vector embeddings in the same semantic space as text.
+    \item \textbf{Aggregate.} For video, the Temporal Aggregation Module (TAM) merges embeddings of the same object tracked across consecutive frames into a single representative embedding, reducing index size.
+    \item \textbf{Store.} All embeddings are stored with timestamps in a vector database (FAISS).
+    \item \textbf{Search.} User queries are encoded and matched against stored embeddings using hybrid scoring, which takes the maximum of the best region score and the whole-image score, returning ranked results with timestamps.
 \end{enumerate}
+
+The hybrid scoring approach ensures the system never performs worse than whole-image encoding alone: for queries where the whole frame is more informative (e.g., relational queries like ``person riding a bicycle''), the whole-image score dominates; for queries targeting small or background objects, the region score provides a stronger match.
 
 For face-specific search, the system integrates InsightFace \cite{deng2019arcface} to detect, recognize, and cluster faces by identity across footage.
 
@@ -47,22 +50,27 @@ For face-specific search, the system integrates InsightFace \cite{deng2019arcfac
 This system is designed for users who need to locate specific events, objects, or people within large volumes of video footage:
 
 \begin{itemize}
-    \item \textbf{Security personnel and investigators} who search footage for evidence or suspects under time pressure.
-    \item \textbf{Retail loss prevention teams} who monitor footage for theft or policy violations across multiple cameras.
-    \item \textbf{Operations and facility managers} who review footage for incidents or workflow monitoring without technical expertise.
-    \item \textbf{Small business owners} who have basic CCTV setups and need to look up specific moments like verifying a complaint or checking a delivery.
+    \item \textbf{Security personnel and investigators} who search footage for suspects, evidence, or specific events under time pressure.
+    \item \textbf{Business owners and operations staff} who review footage to verify incidents, check deliveries, or monitor daily operations.
 \end{itemize}
+
+All users have access to the same features. The system must be simple enough that non-technical users can operate it without training.
 
 \section{Terminology}
 \label{section:terminology}
 
 \begin{description}[style=nextline, leftmargin=2cm]
-    \item[CLIP] Contrastive Language-Image Pretraining. Maps images and text into a shared vector space for similarity-based retrieval.
-    \item[SAM] Segment Anything Model. Segments any object in an image without category-specific training.
-    \item[InsightFace] Open-source face analysis toolkit for detection, recognition, and alignment.
+    \item[Vision-Language Model] A model that maps both images and text into a shared vector space, enabling cross-modal similarity search. Examples include CLIP and SigLIP2.
+    \item[CLIP] Contrastive Language-Image Pretraining \cite{radford2021learning}. A vision-language model by OpenAI trained on 400 million image-text pairs.
+    \item[SigLIP2] An improved vision-language model by Google \cite{zhai2025siglip2} with better training objectives and higher retrieval accuracy than CLIP.
+    \item[SAM] Segment Anything Model \cite{kirillov2023segment}. Segments any object in an image without category-specific training.
+    \item[TAM] Temporal Aggregation Module. A lightweight neural network that merges multiple embeddings of the same tracked object across video frames into a single representative embedding.
+    \item[InsightFace] Open-source face analysis toolkit for detection, recognition, alignment, and clustering.
     \item[Embedding] A numerical vector representing data in a high-dimensional space where similar items are close together.
     \item[Cosine Similarity] A metric measuring similarity between two vectors by the cosine of the angle between them.
-    \item[Vector Database] A database optimized for storing and querying high-dimensional embeddings via nearest-neighbor search.
+    \item[FAISS] Facebook AI Similarity Search. A library for efficient similarity search over large collections of vectors.
+    \item[Hybrid Scoring] A scoring strategy that takes the maximum of the best region score and the whole-image score for each candidate, ensuring region-level search never degrades performance.
     \item[Open Vocabulary] The ability to search for concepts beyond a fixed set of predefined categories.
     \item[Region-Level Search] Segmenting an image into individual regions and encoding each separately, rather than encoding the full frame.
+    \item[Context Padding] Expanding crop boundaries beyond the tight bounding box to include surrounding visual context, improving encoder accuracy.
 \end{description}
