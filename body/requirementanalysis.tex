@@ -242,14 +242,50 @@ The system involves two actors: the \textbf{User} and the \textbf{System Adminis
 \section{User Interface Design}
 \label{section:user-interface-design}
 
-\imgplaceholder{0.8\textwidth}{5cm}{UI Mockups}
+The following mockups were designed in Figma to establish the visual direction and interaction flow before development. They represent the intended layout and functionality, not the final implementation. Sample images used in the mockups are sourced from the COCO dataset (search results), publicly available CCTV footage (footage thumbnails), and AI-generated faces from thispersondoesnotexist.com (face gallery). All sample images are intentionally blurred for privacy.
 
-The interface is organized around three main views:
+The interface is organized around four main pages.
 
-\begin{enumerate}
-    \item \textbf{Search View.} The primary interface where users enter text queries or upload reference images. Results are displayed as a grid of thumbnails with similarity scores and timestamps. Each result is clickable and links to the video player at the corresponding moment.
+\subsection{Footage Page}
 
-    \item \textbf{Face Gallery View.} A grid of face clusters detected across all uploaded footage. Each cluster shows a representative face thumbnail and the number of appearances. Clicking a cluster opens a chronological timeline of all frames containing that individual.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{assets/mockup/footage-page.png}
+    \caption{Footage page showing uploaded videos organized by date with camera labels and durations.}
+    \label{fig:ui-footage}
+\end{figure}
 
-    \item \textbf{Video Player View.} An embedded video player with standard playback controls. When accessed from a search result, the player automatically seeks to the relevant timestamp. A timeline strip below the player highlights all moments that matched the current query.
-\end{enumerate}
+The footage page displays all uploaded videos grouped by date. Each video shows a thumbnail, camera name, and duration. Users can upload new videos, filter by status, and search through their footage library. This is the entry point for managing video content before searching.
+
+\subsection{Search Page}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{assets/mockup/search-page.png}
+    \caption{Search results for the query ``Person with red shirt,'' showing matched regions as a thumbnail grid with timestamps.}
+    \label{fig:ui-search}
+\end{figure}
+
+The search page is the primary interface. Users type a natural language query or upload a reference image using the search bar at the bottom. Results appear as a grid of thumbnails, each showing the matched region, timestamp, and source camera. Results can be toggled between grid and list view.
+
+\subsection{Search Detail Panel}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{assets/mockup/search-detail.png}
+    \caption{Result detail panel showing the matched frame with similarity score, timestamp, source, detected objects, and available actions.}
+    \label{fig:ui-detail}
+\end{figure}
+
+Clicking a result opens a detail panel on the right side. The panel displays the matched frame with a video preview, the similarity score, exact timestamp, source camera, match type (region or whole-image), and detected object tags. Actions include viewing the full footage, exporting the frame, searching for the same person, and bookmarking the result.
+
+\subsection{Faces Page}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{assets/mockup/faces-page.png}
+    \caption{Face gallery showing detected identities with appearance counts, sortable and filterable.}
+    \label{fig:ui-faces}
+\end{figure}
+
+The faces page displays all unique identities detected by InsightFace across uploaded footage. Each face cluster shows a representative thumbnail, a label, the number of appearances, and how many videos the person appears in. Users can filter by footage, sort by appearance count, and search through detected faces. Selecting a face retrieves all frames containing that individual.
