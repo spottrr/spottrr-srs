@@ -13,7 +13,19 @@ Figure~\ref{fig:system-architecture} shows the high-level system architecture.
     \label{fig:system-architecture}
 \end{figure}
 
-The \textbf{Web App} provides the user interface for uploading video and issuing queries. The \textbf{REST API} handles requests and dispatches video processing jobs to the \textbf{Task Queue}. The \textbf{AI Pipeline} performs segmentation, encoding, and face detection. Processed embeddings are stored in the \textbf{Vector DB} (FAISS), and raw video files are kept in \textbf{File Storage}. During search, the REST API encodes the query through the AI Pipeline and performs similarity search against the Vector DB.
+The system consists of five components:
+
+\begin{itemize}
+    \item \textbf{Web App (React).} The user-facing frontend. Users upload videos, enter search queries, browse face clusters, and view results through this interface. It communicates with the backend exclusively through HTTP requests.
+
+    \item \textbf{REST API (FastAPI).} The central coordinator. It receives upload and search requests from the Web App, validates inputs, and routes them to the appropriate service. For uploads, it dispatches processing jobs to the Task Queue. For searches, it encodes the query through the AI Pipeline and runs similarity search against the Vector DB.
+
+    \item \textbf{Task Queue (Celery + Redis).} Handles video processing asynchronously. When a video is uploaded, the REST API enqueues a processing job rather than blocking the user. The Task Queue picks up the job and runs the AI Pipeline in the background, allowing users to continue using the application while their video is being indexed.
+
+    \item \textbf{AI Pipeline (SAM + SigLIP2 + InsightFace).} The core intelligence of the system. It operates in two modes: during ingestion, it segments objects (SAM), encodes regions and whole frames (SigLIP2), aggregates tracked object embeddings across frames (TAM), and detects faces (InsightFace). During search, it encodes the user's query into the same vector space for similarity matching.
+
+    \item \textbf{Storage.} Split into two parts. The \textbf{Vector DB} (FAISS) stores all embeddings with metadata (timestamps, bounding boxes, source camera) and handles fast similarity search. \textbf{File Storage} holds the original video files for playback when users click on a search result.
+\end{itemize}
 
 Figure~\ref{fig:pipelines} zooms into the AI pipeline, showing its two operating modes.
 
@@ -131,7 +143,13 @@ Adding SAM segmentation improves both encoders, and the stronger encoder (SigLIP
 \subsubsection{Temporal Aggregation Module (TAM)}
 \label{subsubsec:tam}
 
-For video retrieval, SAM tracks objects across consecutive frames. Without aggregation, a person appearing in 300 frames would produce 300 near-identical embeddings in the index, causing bloat and duplicate results. The Temporal Aggregation Module (TAM) is a lightweight neural network that merges multiple embeddings of the same tracked object into a single representative embedding. TAM uses SAM confidence scores to weight each frame, assigning higher importance to frames where the object is clearly visible and lower importance to occluded or blurry frames. TAM is trained on the UCA dataset using text-region pairs, learning to produce embeddings that best match the text description of the object.
+The region-level approach described above works well for static images, but video introduces a new challenge. When SAM tracks an object across consecutive frames, the same person walking through a 5-minute clip might appear in 300 frames, producing 300 near-identical embeddings in the index. This causes three problems: the index grows unnecessarily large, queries slow down, and search results are filled with duplicates of the same object.
+
+The Temporal Aggregation Module (TAM) will solve this by merging multiple embeddings of the same tracked object into a single representative embedding. TAM is designed as a lightweight neural network that takes as input the N embeddings produced by SigLIP2 for one tracked object across N frames, along with the SAM confidence score for each frame. It will learn to assign higher weight to frames where the object is clearly visible and unoccluded, and lower weight to frames where the object is partially hidden, blurry, or at the edge of the frame. The output will be a single weighted-sum embedding that best represents the object, normalized for stable similarity search.
+
+TAM will be trained on the UCA dataset \cite{uca2024}, which provides 23,542 sentence-level descriptions of surveillance video clips. The training objective is to produce embeddings that are as close as possible to the text description of the tracked object, so the module naturally learns to prefer frames where the object matches its description most clearly.
+
+This module is the project's novel contribution. Existing work like SAM-CLIP Search \cite{mulani2025samclip} operates only on static images. TAM is what will extend region-based retrieval from images to video, making it practical for real surveillance footage where objects move, get occluded, and appear across hundreds of frames.
 
 \subsection{Evaluation}
 
