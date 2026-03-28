@@ -4,34 +4,34 @@
 \section{Background}
 \label{section:background}
 
-Video surveillance is widely deployed across businesses, governments, and public institutions. Even a small establishment with a handful of cameras can generate hundreds of hours of footage per day, and across an entire city or enterprise the volume quickly reaches a scale that no human team can feasibly review. Despite this, only 29\% of criminal cases involving CCTV produced useful evidence for investigators \cite{ashby2017value}. The problem is not a lack of recordings but the absence of efficient tools for searching through them.
+Video surveillance is widely deployed across businesses, governments, and public institutions. Even a small establishment with a handful of cameras can generate hundreds of hours of footage per day, and across an entire city or enterprise the volume quickly reaches a scale that no human team can feasibly review. Investigators struggle to locate relevant moments in CCTV footage, often manually scrubbing through hours of video \cite{ashby2017value}. The problem is not a lack of recordings but the absence of efficient tools for searching through them.
 
-Conventional video analytics rely on predefined categories such as ``person'' or ``car.'' These closed-vocabulary systems cannot process open-ended queries like ``man in a red shirt carrying a box.'' This gap between what users want to search for and what existing systems can understand represents a significant bottleneck in video surveillance workflows.
+Conventional video analytics rely on predefined categories such as ``person'' or ``car.'' These closed-vocabulary systems cannot process flexible queries like ``man in a red shirt carrying a box.'' This gap between what users want to search for and what existing systems can understand represents a significant bottleneck in video surveillance workflows.
 
-Recent advances in computer vision have introduced models that address these limitations. Vision-language models such as CLIP \cite{radford2021learning} and SigLIP2 \cite{zhai2025siglip2} map both images and text into a shared embedding space, enabling similarity-based retrieval without predefined labels. SAM \cite{kirillov2023segment} can segment any object in an image without prior training on specific categories. Together, these models open the door to a new kind of video search that is flexible, open-vocabulary, and capable of handling diverse queries.
+Recent advances in computer vision have introduced three key capabilities that address these limitations: \textbf{open-vocabulary search} that can match any text description against visual content, \textbf{object segmentation} that can isolate every object in a frame regardless of category, and \textbf{face similarity} that can detect and match faces across footage. Together, these capabilities open the door to a new kind of video search that is flexible and capable of handling diverse queries.
 
 \section{Problem Statement}
 \label{section:problem-statement}
 
-Current video search approaches suffer from two limitations. First, traditional tools operate on a closed vocabulary and cannot answer queries outside their predefined label set. Second, existing methods that support open-vocabulary search encode entire frames as single vectors, diluting the signal of individual objects and leading to poor retrieval when targets are small or occluded. Our benchmark confirms this: whole-image encoding achieves only 0.244 Recall@5 on small background objects, compared to 0.619 with our region-level approach.
+Current video search approaches suffer from two limitations. First, traditional tools operate on a closed vocabulary and cannot answer queries outside their predefined label set. Second, existing methods that support open-vocabulary search encode entire frames as single vectors, diluting the signal of individual objects and leading to poor retrieval when targets are small or occluded.
 
 \section{Solution Overview}
 \label{section:solution-overview}
 
-This project proposes an open-vocabulary video search system that allows users to upload footage, describe what they are looking for using natural language or reference images, and retrieve the exact matching moments. The system uses a region-level hybrid approach with five stages:
+This project proposes an open-vocabulary video search system that allows users to upload footage, describe what they are looking for using natural language or reference images, and retrieve the exact matching frames. The system uses a region-level hybrid approach with the following stages:
 
 \begin{enumerate}
     \item \textbf{Extract.} Keyframes are extracted at 1--5 frames per second.
-    \item \textbf{Segment.} SAM processes each frame to isolate every distinct object or region.
+    \item \textbf{Segment.} Each frame is processed by an object segmentation model to isolate every distinct object or region.
     \item \textbf{Encode.} A vision-language encoder encodes each segmented region (with context padding) and the whole frame into vector embeddings in the same semantic space as text.
-    \item \textbf{Aggregate.} For video, the Temporal Aggregation Module (TAM) merges embeddings of the same object tracked across consecutive frames into a single representative embedding, reducing index size.
-    \item \textbf{Store.} All embeddings are stored with timestamps in a vector database (FAISS).
+    \item \textbf{Deduplicate.} For video, a rule-based deduplication process filters near-identical frames and groups tracked object embeddings across consecutive frames, keeping only the best representative embedding per object to reduce index bloat and duplicate results.
+    \item \textbf{Store.} All embeddings are stored with timestamps in a vector database.
     \item \textbf{Search.} User queries are encoded and matched against stored embeddings using hybrid scoring, which takes the maximum of the best region score and the whole-image score, returning ranked results with timestamps.
 \end{enumerate}
 
 The hybrid scoring approach ensures the system never performs worse than whole-image encoding alone: for queries where the whole frame is more informative (e.g., relational queries like ``person riding a bicycle''), the whole-image score dominates; for queries targeting small or background objects, the region score provides a stronger match.
 
-For face-specific search, the system integrates InsightFace \cite{deng2019arcface} to detect, recognize, and cluster faces by identity across footage.
+For face-specific search, the system uses face similarity to detect, recognize, and cluster faces by identity across footage.
 
 \subsection{Features}
 \label{subsection:features}
@@ -39,7 +39,7 @@ For face-specific search, the system integrates InsightFace \cite{deng2019arcfac
 \begin{enumerate}[leftmargin=80pt]
     \item Open-Vocabulary Text Search: Search using natural language without predefined categories.
     \item Image-Based Query: Upload a reference photo to find matching appearances.
-    \item Face Recognition and Tracking: Detect, cluster, and track unique faces across footage.
+    \item Face Similarity Search: Detect, cluster, and track unique faces across footage.
     \item Timestamp Navigation: Jump directly to the exact moment from any search result.
     \item Multi-Camera Support: Search across footage from multiple cameras.
 \end{enumerate}
@@ -64,13 +64,14 @@ All users have access to the same features. The system must be simple enough tha
     \item[CLIP] Contrastive Language-Image Pretraining \cite{radford2021learning}. A vision-language model by OpenAI trained on 400 million image-text pairs.
     \item[SigLIP2] An improved vision-language model by Google \cite{zhai2025siglip2} with better training objectives and higher retrieval accuracy than CLIP.
     \item[SAM] Segment Anything Model \cite{kirillov2023segment}. Segments any object in an image without category-specific training.
-    \item[TAM] Temporal Aggregation Module. A lightweight neural network that merges multiple embeddings of the same tracked object across video frames into a single representative embedding.
-    \item[InsightFace] Open-source face analysis toolkit for detection, recognition, alignment, and clustering.
+    \item[Object Region Embedding] A vector embedding produced by encoding an individual segmented object region through a vision-language model.
+    \item[Face Similarity] The process of detecting faces, generating identity embeddings, and matching or clustering them to find the same individual across footage.
     \item[Embedding] A numerical vector representing data in a high-dimensional space where similar items are close together.
     \item[Cosine Similarity] A metric measuring similarity between two vectors by the cosine of the angle between them.
-    \item[FAISS] Facebook AI Similarity Search. A library for efficient similarity search over large collections of vectors.
+    \item[Vector Database] A database system optimized for storing and querying high-dimensional vector embeddings via nearest-neighbor search.
     \item[Hybrid Scoring] A scoring strategy that takes the maximum of the best region score and the whole-image score for each candidate, ensuring region-level search never degrades performance.
     \item[Open Vocabulary] The ability to search for concepts beyond a fixed set of predefined categories.
     \item[Region-Level Search] Segmenting an image into individual regions and encoding each separately, rather than encoding the full frame.
     \item[Context Padding] Expanding crop boundaries beyond the tight bounding box to include surrounding visual context, improving encoder accuracy.
+    \item[Rule-Based Deduplication] A two-stage process for reducing duplicate embeddings in video: (1) filtering near-identical frames by comparing consecutive frame embeddings, and (2) grouping tracked object embeddings within a sliding window, keeping only the best representative per object.
 \end{description}

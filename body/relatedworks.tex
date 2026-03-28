@@ -48,13 +48,13 @@ Kirillov et al. \cite{kirillov2023segment} developed SAM, a foundation model tra
 
 \subsection{SAM-CLIP Search}
 
-Mulani et al. \cite{mulani2025samclip} combined SAM segmentation with CLIP encoding for region-based image retrieval. On standard benchmarks (COCO, Flickr30K, Fashion200K), their approach achieved 92\% retrieval accuracy and 89.3\% Recall@5, compared to 85\% accuracy with CLIP-only retrieval. Our system builds on this approach with three key improvements: (1) replacing CLIP with SigLIP2 for stronger encoding, (2) adding context padding to crops and including the whole image as a region, and (3) using hybrid max-scoring that fuses region-level and whole-image scores. Our benchmark on COCO val2017 shows SAM + SigLIP2 achieves 0.748 Recall@5 compared to 0.654 for SAM + CLIP.
+Mulani et al. \cite{mulani2025samclip} combined SAM segmentation with CLIP encoding for region-based image retrieval. On standard benchmarks (COCO, Flickr30K, Fashion200K), their approach achieved 92\% retrieval accuracy and 89.3\% Recall@5, compared to 85\% accuracy with CLIP-only retrieval. Our system builds on this approach with three key improvements: (1) replacing CLIP with SigLIP2 for stronger encoding, (2) adding context padding to crops and including the whole image as a region, and (3) using hybrid max-scoring that fuses region-level and whole-image scores. Our preliminary benchmark on COCO val2017 (simple + small object queries) shows SAM + SigLIP2 achieves 0.764 Recall@5 compared to 0.644 for SAM + CLIP, confirming that the region-based approach with a stronger encoder yields better results.
 
-\subsection{ArcFace and InsightFace}
+\subsection{ArcFace: Face Similarity}
 
-Deng et al. \cite{deng2019arcface} introduced ArcFace, an angular margin loss for face recognition that produces highly discriminative embeddings. InsightFace is the open-source toolkit implementing ArcFace along with face detection and alignment. In our system, InsightFace handles face detection, identity embedding, and clustering, allowing users to select a face and retrieve all frames containing that individual.
+Deng et al. \cite{deng2019arcface} introduced ArcFace, an angular margin loss for face recognition that produces highly discriminative embeddings. InsightFace is the open-source toolkit implementing ArcFace along with face detection and alignment. In our system, face similarity is used for face detection, identity embedding, and clustering, allowing users to select a face and retrieve all frames containing that individual.
 
 \subsection{The Value of CCTV in Investigations}
 
-Ashby \cite{ashby2017value} found that CCTV footage contributed useful evidence in only 29\% of criminal cases studied in London. The barrier was not camera availability but the difficulty of locating relevant footage within large archives. This finding directly motivates our system, which addresses the gap between having footage and being able to extract actionable information from it.
+Ashby \cite{ashby2017value} studied 251,195 criminal cases on the British railway network and found that even when CCTV footage was available, investigators struggled to locate relevant moments, often manually scrubbing through hours of video. This finding directly motivates our system, which addresses the gap between having footage and being able to extract actionable information from it.
 

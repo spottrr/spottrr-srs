@@ -14,8 +14,8 @@ The development is organized into the following phases:
         \toprule
         \textbf{Phase} & \textbf{Name} & \textbf{Description} \\
         \midrule
-        1 & Core AI Development & Integrate SAM segmentation, SigLIP2 encoding, InsightFace face detection, and the Temporal Aggregation Module (TAM). \\[6pt]
-        2 & Backend \& Infrastructure & Set up FAISS vector database, file storage, and automated indexing pipeline with Celery task queue. \\[6pt]
+        1 & Core AI Development & Integrate SAM segmentation, SigLIP2 encoding, face similarity detection, and rule-based deduplication for video. \\[6pt]
+        2 & Backend \& Infrastructure & Set up vector database, file storage, and automated indexing pipeline with Celery task queue. \\[6pt]
         3 & Search Engine \& API & Build the REST API for search (text, image, face), hybrid scoring, and identity clustering. \\[6pt]
         4 & Web Interface \& Integration & Develop the React frontend for video upload, search, and result navigation. Full system integration. \\[6pt]
         5 & Evaluation \& Finalization & Benchmark on COCO val2017 and UCA, performance tuning, and final documentation. \\
@@ -39,12 +39,12 @@ Table~\ref{tab:tech-stack} summarizes the technologies used in each layer of the
         Frontend & React, TypeScript, Tailwind CSS \\
         Backend & FastAPI (Python) \\
         Task Queue & Celery with Redis \\
-        Vector Database & FAISS \\
+        Database & PostgreSQL (pgvector) \\
         File Storage & Local filesystem / S3-compatible \\
         Segmentation & SAM (ViT-H) \\
         Vision-Language Encoder & SigLIP2 (ViT-B/16-256) via OpenCLIP \\
-        Face Recognition & InsightFace (ArcFace) \\
-        Temporal Aggregation & TAM (custom, PyTorch) \\
+        Face Similarity & InsightFace (ArcFace) \\
+        Deduplication & Rule-based (frame similarity + sliding window) \\
         Deep Learning Framework & PyTorch \\
         \bottomrule
     \end{tabular}
@@ -64,7 +64,17 @@ Table~\ref{tab:tech-stack} summarizes the technologies used in each layer of the
 
 \section{Schedule}
 \label{section:schedule}
-% TODO: Add Gantt chart
+
+The project spans two periods: April 2026 (pre-cooperative education) and January to March 2027 (cooperative education). Figure~\ref{fig:gantt-chart} shows the planned schedule broken down by phase.
+
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth]{\includegraphics[width=1.2\textwidth]{assets/gantt-chart.png}}
+    \caption{Project schedule (Gantt chart).}
+    \label{fig:gantt-chart}
+\end{figure}
+
+The first period focuses on core AI development: integrating SAM segmentation, SigLIP2 encoding, face similarity detection, and implementing rule-based deduplication for video. The second period covers backend infrastructure (vector database, task queue, automated indexing), search engine and API logic (hybrid scoring, identity clustering), web interface development, and final evaluation with benchmarking and documentation.
 
 % \section{Progress Tracking Report}
 % \label{section:progress-tracking-report}

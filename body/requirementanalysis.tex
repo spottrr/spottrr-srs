@@ -9,7 +9,7 @@ The following stakeholders have been identified for the system:
 \begin{enumerate}
     \item \textbf{Investigators.} Security personnel, law enforcement officers, and loss prevention staff who actively search footage for specific people, objects, or events. Their primary concern is retrieval accuracy and the ability to use natural language, reference images, and face recognition to locate evidence quickly.
 
-    \item \textbf{Facility Operators.} Business owners, operations managers, and other non-technical users who review footage to verify incidents, check deliveries, or monitor daily operations. Their primary concern is ease of use — the system must be operable without technical expertise.
+    \item \textbf{Facility Operators.} Business owners, operations managers, and other non-technical users who review footage to verify incidents, check deliveries, or monitor daily operations. Their primary concern is ease of use, and the system must be operable without technical expertise.
 
     \item \textbf{System Administrator.} Technical staff responsible for deploying and maintaining the system, managing video storage, and ensuring the processing pipeline runs reliably.
 \end{enumerate}
@@ -23,11 +23,11 @@ Both Investigators and Facility Operators have access to all features (upload, s
 
 \begin{enumerate}
     \item As a \textbf{Facility Operator}, I want to upload video files and have them automatically processed and indexed so that the footage becomes searchable without manual intervention.
-    \item As a \textbf{Investigator}, I want to search footage by describing a person or object in natural language so that I can quickly locate relevant moments without manually reviewing hours of video.
-    \item As a \textbf{Investigator}, I want to upload a reference photo and find all matching appearances so that I can track a person or object across cameras.
-    \item As a \textbf{Investigator}, I want to select a detected face and see every frame where that individual appears so that I can build a timeline of their activity.
+    \item As an \textbf{Investigator}, I want to search footage by describing a person or object in natural language so that I can quickly locate relevant moments without manually reviewing hours of video.
+    \item As an \textbf{Investigator}, I want to upload a reference photo and find all matching appearances so that I can track a person or object across cameras.
+    \item As an \textbf{Investigator}, I want to select a detected face and see every frame where that individual appears so that I can build a timeline of their activity.
     \item As a \textbf{Facility Operator}, I want to click on a search result and jump directly to that moment in the video so that I can review the context around the event.
-    \item As a \textbf{Investigator}, I want to export selected search results with timestamps and metadata so that I can compile evidence or share findings.
+    \item As an \textbf{Investigator}, I want to export selected search results with timestamps and metadata so that I can compile evidence or share findings.
     \item As a \textbf{System Administrator}, I want to monitor the status of the processing pipeline so that I can ensure the system runs reliably and troubleshoot any technical issues promptly.
     \item As a \textbf{System Administrator}, I want to manage video storage and retention policies so that I can optimize disk space and ensure the system remains operational.
 \end{enumerate}
@@ -101,7 +101,7 @@ Both Investigators and Facility Operators have access to all features (upload, s
         \item The user navigates to the face gallery page.
         \item The system displays all detected face clusters, each shown as a representative thumbnail with the number of appearances.
         \item The user selects a face cluster.
-        \item The system retrieves all frames where that individual was detected using InsightFace embeddings.
+        \item The system retrieves all frames where that individual was detected using face similarity embeddings.
         \item The system displays results in chronological order with timestamps and source camera labels.
         \item The user clicks on a result to view the footage at that moment.
     \end{enumerate} \\ \hline
@@ -128,7 +128,7 @@ Both Investigators and Facility Operators have access to all features (upload, s
         \item The user selects one or more video files to upload.
         \item The system validates the file format and begins uploading.
         \item Once the upload completes, the system queues an asynchronous background job for processing. The user is free to navigate away or continue using the application.
-        \item The background job extracts keyframes at 1--5 FPS, runs SAM segmentation \cite{kirillov2023segment}, SigLIP2 encoding \cite{zhai2025siglip2}, temporal aggregation (TAM, see Section~\ref{subsubsec:tam}), and InsightFace face detection \cite{deng2019arcface} on each frame.
+        \item The background job extracts keyframes at 1--5 FPS, runs SAM segmentation \cite{kirillov2023segment}, SigLIP2 encoding \cite{zhai2025siglip2}, rule-based deduplication (see Section~\ref{subsubsec:dedup}), and face detection \cite{deng2019arcface} on each frame.
         \item The system displays a progress indicator showing the current stage and percentage complete.
         \item Once processing finishes, the system marks the video as searchable and notifies the user.
     \end{enumerate} \\ \hline
@@ -290,4 +290,4 @@ Clicking a result opens a detail panel on the right side. The panel displays the
     \label{fig:ui-faces}
 \end{figure}
 
-The faces page displays all unique identities detected by InsightFace across uploaded footage. Each face cluster shows a representative thumbnail, a label, the number of appearances, and how many videos the person appears in. Users can filter by footage, sort by appearance count, and search through detected faces. Selecting a face retrieves all frames containing that individual.
+The faces page displays all unique identities detected by face similarity across uploaded footage. Each face cluster shows a representative thumbnail, a label, the number of appearances, and how many videos the person appears in. Users can filter by footage, sort by appearance count, and search through detected faces. Selecting a face retrieves all frames containing that individual.
