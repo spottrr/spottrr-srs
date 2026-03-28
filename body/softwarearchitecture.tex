@@ -6,8 +6,12 @@
 
 Figure~\ref{fig:system-architecture-highlevel} shows the high-level system architecture, illustrating the relationship between the frontend, backend, AI pipeline, and storage layers.
 
-\imgplaceholder{0.8\textwidth}{4cm}{High-Level System Architecture (Frontend, Backend, AI Pipeline, Storage)}
-\label{fig:system-architecture-highlevel}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{assets/high-level-architecture.png}
+    \caption{High-level system architecture.}
+    \label{fig:system-architecture-highlevel}
+\end{figure}
 
 The system consists of four main layers:
 
@@ -60,7 +64,7 @@ This section describes the runtime behavior of the system through sequence diagr
 
 \subsection{Video Upload and Indexing (UC-4)}
 
-Figure~\ref{fig:seq-upload} shows the sequence of interactions when a user uploads a video.
+The user uploads a video file through the Web App. The REST API validates the file and stores it in File Storage, then enqueues a processing job in the Task Queue. The user is free to continue using the application while processing runs in the background. The Task Queue extracts keyframes at 1--5 FPS, then runs two parallel paths: SAM segments each frame into object regions which are encoded by SigLIP2 into vector embeddings, while face detection identifies and encodes faces. A rule-based deduplication process filters near-identical frames and groups tracked object embeddings, keeping the best representative per object. All embeddings are stored in the Vector DB with timestamps and metadata. Figure~\ref{fig:seq-upload} shows this sequence of interactions.
 
 \begin{figure}[H]
     \centering
@@ -69,11 +73,9 @@ Figure~\ref{fig:seq-upload} shows the sequence of interactions when a user uploa
     \label{fig:seq-upload}
 \end{figure}
 
-The user uploads a video file through the Web App. The REST API validates the file and stores it in File Storage, then enqueues a processing job in the Task Queue. The user is free to continue using the application while processing runs in the background. The Task Queue extracts keyframes at 1--5 FPS, then runs two parallel paths: SAM segments each frame into object regions which are encoded by SigLIP2 into vector embeddings, while face detection identifies and encodes faces. A rule-based deduplication process filters near-identical frames and groups tracked object embeddings, keeping the best representative per object. All embeddings are stored in the Vector DB with timestamps and metadata.
-
 \subsection{Text Search (UC-1)}
 
-Figure~\ref{fig:seq-search} shows the sequence of interactions when a user performs a text search.
+The user submits a text query through the Web App. The REST API sends the query to the AI Pipeline, where the image-text encoder (SigLIP2) encodes it into a vector embedding. The system then performs cosine similarity search against the Vector DB. A hybrid scoring function computes each candidate's final score as the maximum of its best object region score and whole-image score. The matching frames are retrieved and returned to the Web App for display with timestamps. Figure~\ref{fig:seq-search} shows this sequence of interactions.
 
 \begin{figure}[H]
     \centering
@@ -81,8 +83,6 @@ Figure~\ref{fig:seq-search} shows the sequence of interactions when a user perfo
     \caption{Sequence diagram for text search.}
     \label{fig:seq-search}
 \end{figure}
-
-The user submits a text query through the Web App. The REST API sends the query to the AI Pipeline, where SigLIP2 encodes it into a vector embedding. The system then performs cosine similarity search against the Vector DB. A hybrid scoring function computes each candidate's final score as the maximum of its best object region score and whole-image score. The matching frames are retrieved and returned to the Web App for display with timestamps.
 
 \section{AI and Data Design}
 \label{section:ai-data-design}
