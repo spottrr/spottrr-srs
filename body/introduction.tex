@@ -18,7 +18,9 @@ Current video search approaches suffer from two limitations. First, traditional 
 \section{Solution Overview}
 \label{section:solution-overview}
 
-This project proposes an open-vocabulary video search system that allows users to upload footage, describe what they are looking for using natural language or reference images, and retrieve the exact matching frames. The system uses a region-level hybrid approach with the following stages:
+This project proposes an open-vocabulary video search system that allows users to upload footage, describe what they are looking for using natural language or reference images, and retrieve the exact matching frames. The system performs visual object search only: it does not process audio, transcribe speech, or recognize actions over time. The technique applies to any video footage but is most useful for long-form archives such as CCTV, dashcam, and bodycam recordings, where users need to locate specific visual moments at scale.
+
+The system uses a region-level hybrid approach with the following stages:
 
 \begin{enumerate}
     \item \textbf{Extract.} Keyframes are extracted at 1--5 frames per second.
@@ -31,7 +33,7 @@ This project proposes an open-vocabulary video search system that allows users t
 
 The hybrid scoring approach ensures the system never performs worse than whole-image encoding alone: for queries where the whole frame is more informative (e.g., relational queries like ``person riding a bicycle''), the whole-image score dominates; for queries targeting small or background objects, the region score provides a stronger match.
 
-For face-specific search, the system uses face similarity to detect, recognize, and cluster faces by identity across footage.
+For face-specific search, the system uses a watchlist-based approach: users upload reference photos of specific individuals they are authorized to search for, and the system matches faces detected in the footage against this watchlist at search time. The system does not cluster bystander faces into persistent identities.
 
 \subsection{Features}
 \label{subsection:features}
@@ -39,7 +41,7 @@ For face-specific search, the system uses face similarity to detect, recognize, 
 \begin{enumerate}[leftmargin=80pt]
     \item Open-Vocabulary Text Search: Search using natural language without predefined categories.
     \item Image-Based Query: Upload a reference photo to find matching appearances.
-    \item Face Similarity Search: Detect, cluster, and track unique faces across footage.
+    \item Watchlist-Based Face Search: Upload reference photos of specific individuals to find every frame where they appear.
     \item Timestamp Navigation: Jump directly to the exact moment from any search result.
     \item Multi-Camera Support: Search across footage from multiple cameras.
 \end{enumerate}
@@ -47,12 +49,7 @@ For face-specific search, the system uses face similarity to detect, recognize, 
 \section{Target User}
 \label{section:target-user}
 
-This system is designed for users who need to locate specific events, objects, or people within large volumes of video footage:
-
-\begin{itemize}
-    \item \textbf{Security personnel and investigators} who search footage for suspects, evidence, or specific events under time pressure.
-    \item \textbf{Business owners and operations staff} who review footage to verify incidents, check deliveries, or monitor daily operations.
-\end{itemize}
+This system is designed for authorized users who own or have lawful access to the video footage they upload. Target users include security personnel and investigators searching footage for suspects, evidence, or events; and business owners and operations staff reviewing their own premises footage to verify incidents, check deliveries, or monitor operations. The system is not designed for processing footage the user does not have authorization to access.
 
 All users have access to the same features. The system must be simple enough that non-technical users can operate it without training.
 
@@ -65,7 +62,8 @@ All users have access to the same features. The system must be simple enough tha
     \item[SigLIP2] An improved vision-language model by Google \cite{zhai2025siglip2} with better training objectives and higher retrieval accuracy than CLIP.
     \item[SAM] Segment Anything Model \cite{kirillov2023segment}. Segments any object in an image without category-specific training.
     \item[Object Region Embedding] A vector embedding produced by encoding an individual segmented object region through a vision-language model.
-    \item[Face Similarity] The process of detecting faces, generating identity embeddings, and matching or clustering them to find the same individual across footage.
+    \item[Face Similarity] The process of detecting faces, generating identity embeddings, and comparing them via vector similarity to find the same individual across footage.
+    \item[Watchlist] A user-curated set of reference photos of specific individuals the user is authorized to search for. Face embeddings are extracted from these photos and matched against faces detected in the footage at search time.
     \item[Embedding] A numerical vector representing data in a high-dimensional space where similar items are close together.
     \item[Cosine Similarity] A metric measuring similarity between two vectors by the cosine of the angle between them.
     \item[Vector Database] A database system optimized for storing and querying high-dimensional vector embeddings via nearest-neighbor search.
@@ -75,3 +73,12 @@ All users have access to the same features. The system must be simple enough tha
     \item[Context Padding] Expanding crop boundaries beyond the tight bounding box to include surrounding visual context, improving encoder accuracy.
     \item[Rule-Based Deduplication] A two-stage process for reducing duplicate embeddings in video: (1) filtering near-identical frames by comparing consecutive frame embeddings, and (2) grouping tracked object embeddings within a sliding window, keeping only the best representative per object.
 \end{description}
+
+\section{Privacy and PDPA Considerations}
+\label{section:privacy-pdpa}
+
+The system processes video footage uploaded by authorized users. The user is the data controller and is responsible for ensuring they have lawful access to the footage they upload. The system operates as the data processor, acting only within the instructions the user provides through watchlist entries and search queries.
+
+Face matching is implemented as a watchlist-based feature. Users upload reference photos of specific individuals they have a legitimate basis to identify, and the system matches faces detected in the footage against this watchlist at search time. The system does not maintain a persistent biometric gallery of all faces that appear in uploaded footage, and it does not cluster bystander faces into named identities. Face embeddings extracted from footage during ingestion are stored as anonymous vectors associated only with timestamps and bounding boxes; they remain anonymous unless the user later matches them against a watchlist entry. This design limits biometric processing to the individuals the user has explicitly authorized, which aligns with Thailand's Personal Data Protection Act (PDPA) requirements for special-category data.
+
+All footage and embeddings are stored on user-controlled infrastructure and can be deleted by the user at any time.

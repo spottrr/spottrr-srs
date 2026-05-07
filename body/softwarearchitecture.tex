@@ -22,7 +22,7 @@ The system consists of four main layers:
 
     \item \textbf{Storage (PostgreSQL + File Storage).} PostgreSQL with pgvector stores all object region embeddings and face embeddings with metadata (timestamps, bounding boxes, source camera) and handles vector similarity search. File Storage holds the original video files for playback when users click on a search result.
 
-    \item \textbf{AI Pipeline (SAM + SigLIP2 + Face Similarity).} The core intelligence of the system. It operates in two modes: during ingestion, it segments objects (SAM), encodes object regions and whole frames (SigLIP2), applies rule-based deduplication to reduce duplicate embeddings across video frames, and detects faces for identity-based search. During search, it encodes the user's query into the same vector space for similarity matching.
+    \item \textbf{AI Pipeline (SAM + SigLIP2 + Face Matching).} The core intelligence of the system. During ingestion, it segments objects (SAM), encodes object regions and whole frames (SigLIP2), applies rule-based deduplication, and detects face locations and embeddings in each frame for watchlist matching. Face embeddings are stored as anonymous vectors with no identity association or clustering. During search, it encodes the user's query (text, image, or watchlist face) into the same vector space for similarity matching.
 \end{itemize}
 
 Figure~\ref{fig:system-architecture} provides a more detailed view of the system architecture, and Figure~\ref{fig:pipelines} zooms into the AI pipeline, showing its two operating modes.
@@ -53,9 +53,9 @@ Figure~\ref{fig:system-architecture} provides a more detailed view of the system
     \label{fig:pipelines}
 \end{figure}
 
-\textbf{(a) Ingestion Pipeline.} Uploaded video is split into keyframes at 1--5 FPS. Each frame goes through two parallel paths. SAM \cite{kirillov2023segment} segments every object in the frame into regions with context padding. SigLIP2 \cite{zhai2025siglip2} then encodes each object region and the whole frame into vector embeddings. A rule-based deduplication process (see Section~\ref{subsubsec:dedup}) filters near-identical frames and groups tracked object embeddings, keeping only the best representative per object to reduce index bloat. In parallel, face detection identifies and encodes faces. All embeddings are stored with timestamps in the vector database.
+\textbf{(a) Ingestion Pipeline.} Uploaded video is split into keyframes at 1--5 FPS. Each frame goes through two parallel paths. SAM \cite{kirillov2023segment} segments every object in the frame into regions with context padding. SigLIP2 \cite{zhai2025siglip2} then encodes each object region and the whole frame into vector embeddings. A rule-based deduplication process (see Section~\ref{subsubsec:dedup}) filters near-identical frames and groups tracked object embeddings, keeping only the best representative per object to reduce index bloat. In parallel, face detection identifies face locations and extracts face embeddings, which are stored as anonymous vectors associated only with timestamps and bounding boxes (no identity clustering). All embeddings are stored with timestamps in the vector database.
 
-\textbf{(b) Search Pipeline.} The user's text, image, or face query is encoded into the same vector space. The system performs cosine similarity search against all stored embeddings. A hybrid scoring function then computes each candidate's final score as the maximum of its best object region score and whole-image score, ensuring small objects detected by SAM are not lost. Results are ranked and the corresponding frames are retrieved for display.
+\textbf{(b) Search Pipeline.} The user's text or image query is encoded into the same vector space and matched against stored object and frame embeddings. A hybrid scoring function then computes each candidate's final score as the maximum of its best object region score and whole-image score, ensuring small objects detected by SAM are not lost. For watchlist face search, the embedding extracted from a watchlist reference photo is matched against stored face embeddings using cosine similarity. Results are ranked and the corresponding frames are retrieved for display.
 
 \section{Software Design}
 \label{section:software-design}
@@ -158,6 +158,10 @@ In video, the same object can appear across hundreds of frames, producing near-i
 \end{enumerate}
 
 This rule-based approach requires no training data or learned weights. It extends region-based retrieval from static images to video in a simple and practical way. Existing work like SAM-CLIP Search \cite{mulani2025samclip} operates only on static images; this deduplication mechanism is what makes the pipeline practical for real surveillance footage where objects move, get occluded, and appear across hundreds of frames.
+
+\subsubsection{Face Matching}
+
+Faces are detected in each frame using InsightFace \cite{deng2019arcface}. To support watchlist-based search, face embeddings are extracted from user-provided reference photos and stored as the watchlist. At search time, faces detected in the footage are matched against watchlist embeddings using cosine similarity. The system does not cluster bystander faces into persistent identities; face embeddings extracted during ingestion are stored as anonymous vectors (with timestamp and bounding box only) and are never linked to a named individual unless the user later uploads a watchlist entry that matches them.
 
 \subsection{Evaluation}
 

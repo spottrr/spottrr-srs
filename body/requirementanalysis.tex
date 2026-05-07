@@ -25,7 +25,7 @@ Both Investigators and Facility Operators have access to all features (upload, s
     \item As a \textbf{Facility Operator}, I want to upload video files and have them automatically processed and indexed so that the footage becomes searchable without manual intervention.
     \item As an \textbf{Investigator}, I want to search footage by describing a person or object in natural language so that I can quickly locate relevant moments without manually reviewing hours of video.
     \item As an \textbf{Investigator}, I want to upload a reference photo and find all matching appearances so that I can track a person or object across cameras.
-    \item As an \textbf{Investigator}, I want to select a detected face and see every frame where that individual appears so that I can build a timeline of their activity.
+    \item As an \textbf{Investigator}, I want to upload a reference photo of a specific individual and find every frame where they appear so that I can build a timeline of their activity using a person I am authorized to search for.
     \item As a \textbf{Facility Operator}, I want to click on a search result and jump directly to that moment in the video so that I can review the context around the event.
     \item As an \textbf{Investigator}, I want to export selected search results with timestamps and metadata so that I can compile evidence or share findings.
     \item As a \textbf{System Administrator}, I want to monitor the status of the processing pipeline so that I can ensure the system runs reliably and troubleshoot any technical issues promptly.
@@ -92,25 +92,25 @@ Both Investigators and Facility Operators have access to all features (upload, s
 \centering
 \begin{tabular}{|l|p{10cm}|}
 \hline
-\textbf{Use Case}       & UC-3: Face Search \\ \hline
+\textbf{Use Case}       & UC-3: Watchlist-Based Face Search \\ \hline
 \textbf{Primary Actor}   & User \\ \hline
-\textbf{Preconditions}   & Video footage has been uploaded and processed. Face detection and clustering have completed. \\ \hline
-\textbf{Postconditions}  & The user receives a chronological list of all frames containing the selected individual. \\ \hline
+\textbf{Preconditions}   & Video footage has been uploaded and processed. The user has uploaded one or more reference photos to a watchlist. \\ \hline
+\textbf{Postconditions}  & The user receives a chronological list of frames where watchlist individuals were detected. \\ \hline
 \textbf{Main Success Scenario} &
     \begin{enumerate}[nosep, leftmargin=*]
-        \item The user navigates to the face gallery page.
-        \item The system displays all detected face clusters, each shown as a representative thumbnail with the number of appearances.
-        \item The user selects a face cluster.
-        \item The system retrieves all frames where that individual was detected using face similarity embeddings.
+        \item The user navigates to the watchlist page and uploads one or more reference photos of individuals they are authorized to search for.
+        \item The system extracts face embeddings from the reference photos and stores them in the watchlist.
+        \item The user selects a watchlist entry.
+        \item The system retrieves all frames where that individual was detected by matching against the watchlist embedding.
         \item The system displays results in chronological order with timestamps and source camera labels.
         \item The user clicks on a result to view the footage at that moment.
     \end{enumerate} \\ \hline
 \textbf{Alternative Flows} &
     \begin{itemize}[nosep, leftmargin=*]
-        \item \textit{No faces detected:} The footage contains no detectable faces (e.g., low resolution, no people present). The face gallery is empty.
+        \item \textit{No matches found:} The watchlist entry returned no detections in the indexed footage.
     \end{itemize} \\ \hline
 \end{tabular}
-\caption{UC-3: Face Search}
+\caption{UC-3: Watchlist-Based Face Search}
 \label{tab:uc3}
 \end{table}
 
@@ -180,7 +180,7 @@ Both Investigators and Facility Operators have access to all features (upload, s
     \begin{enumerate}[nosep, leftmargin=*]
         \item The user navigates to the search interface.
         \item The user sets a date and time range filter.
-        \item The user enters a text query, uploads a reference image, or selects a face cluster.
+        \item The user enters a text query, uploads a reference image, or selects a watchlist entry.
         \item The system restricts the search to frames within the specified time window.
         \item The system returns ranked results filtered to the selected time range.
     \end{enumerate} \\ \hline
@@ -232,7 +232,7 @@ The system involves two actors: the \textbf{User} and the \textbf{System Adminis
 \begin{itemize}
     \item UC-1: Text-based video search (User)
     \item UC-2: Image-based video search (User)
-    \item UC-3: Face search (User)
+    \item UC-3: Watchlist-based face search (User)
     \item UC-4: Video upload and processing (User)
     \item UC-5: Multi-camera cross search (User)
     \item UC-6: Time-filtered search (User)
@@ -281,13 +281,13 @@ The search page is the primary interface. Users type a natural language query or
 
 Clicking a result opens a detail panel on the right side. The panel displays the matched frame with a video preview, the similarity score, exact timestamp, source camera, match type (region or whole-image), and detected object tags. Actions include viewing the full footage, exporting the frame, searching for the same person, and bookmarking the result.
 
-\subsection{Faces Page}
+\subsection{Watchlist Page}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{assets/mockup/faces-page.png}
-    \caption{Face gallery showing detected identities with appearance counts, sortable and filterable.}
+    \caption{Watchlist page showing reference individuals uploaded by the user with appearance counts across indexed footage.}
     \label{fig:ui-faces}
 \end{figure}
 
-The faces page displays all unique identities detected by face similarity across uploaded footage. Each face cluster shows a representative thumbnail, a label, the number of appearances, and how many videos the person appears in. Users can filter by footage, sort by appearance count, and search through detected faces. Selecting a face retrieves all frames containing that individual.
+The watchlist page displays reference individuals the user has uploaded for face search. Each entry shows the reference photo, a label assigned by the user, the number of detected appearances across uploaded footage, and how many videos contain matches. Users can add new watchlist entries by uploading reference photos, remove entries, and select an entry to retrieve all matching frames. The system does not display or cluster faces of bystanders or other individuals not on the watchlist.
